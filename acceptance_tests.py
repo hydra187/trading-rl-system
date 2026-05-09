@@ -11,7 +11,15 @@ class TradingEnv(gym.Env):
         self.commission = float(commission)
         self.slippage = float(slippage)
         self.friction = self.commission + self.slippage
-        self.feature_cols = ["returns", "volume_change", "rsi", "macd", "atr", "volatility", "pattern"]
+        self.feature_cols = [
+            "returns",
+            "volume_change",
+            "rsi",
+            "macd",
+            "atr",
+            "volatility",
+            "pattern",
+        ]
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -47,12 +55,18 @@ class TradingEnv(gym.Env):
         else:
             decision = "close"
 
-        sl_mult = 1.0 + ((float(np.clip(action[1], -1.0, 1.0)) + 1.0) / 2.0) * 4.0
-        tp_mult = 1.0 + ((float(np.clip(action[2], -1.0, 1.0)) + 1.0) / 2.0) * 4.0
+        sl_mult = 1.0 + (
+            (float(np.clip(action[1], -1.0, 1.0)) + 1.0) / 2.0
+        ) * 4.0
+        tp_mult = 1.0 + (
+            (float(np.clip(action[2], -1.0, 1.0)) + 1.0) / 2.0
+        ) * 4.0
         return decision, sl_mult, tp_mult
 
     def _risk_fraction(self):
-        return abs(self.entry_price - self.initial_stop_price) / self.entry_price if self.entry_price > 0 else 0.0
+        if self.entry_price <= 0:
+            return 0.0
+        return abs(self.entry_price - self.initial_stop_price) / self.entry_price
 
     def _close_position(self, exit_price):
         if self.position == 1:
@@ -70,9 +84,13 @@ class TradingEnv(gym.Env):
         self.position = int(side)
         self.entry_price = float(price)
         risk_distance = max(float(atr) * float(sl_mult), 1e-8)
-        self.initial_stop_price = self.entry_price - risk_distance if side == 1 else self.entry_price + risk_distance
+        if side == 1:
+            self.initial_stop_price = self.entry_price - risk_distance
+            self.take_profit_price = self.entry_price + risk_distance * tp_mult
+        else:
+            self.initial_stop_price = self.entry_price + risk_distance
+            self.take_profit_price = self.entry_price - risk_distance * tp_mult
         self.stop_price = self.initial_stop_price
-        self.take_profit_price = self.entry_price + risk_distance * tp_mult if side == 1 else self.entry_price - risk_distance * tp_mult
         return -(self.friction / (risk_distance / self.entry_price))
 
     def step(self, action):
@@ -85,12 +103,25 @@ class TradingEnv(gym.Env):
         decision, sl_mult, tp_mult = self._decode_action(action)
 
         if self.position != 0:
-            hit_stop = self.position == 1 and low <= self.stop_price or self.position == -1 and high >= self.stop_price
-            hit_take_profit = self.position == 1 and high >= self.take_profit_price or self.position == -1 and low <= self.take_profit_price
+            hit_stop = (
+                self.position == 1
+                and low <= self.stop_price
+                or self.position == -1
+                and high >= self.stop_price
+            )
+            hit_take_profit = (
+                self.position == 1
+                and high >= self.take_profit_price
+                or self.position == -1
+                and low <= self.take_profit_price
+            )
             if hit_stop or hit_take_profit:
-                pnl, r_multiple = self._close_position(self.stop_price if hit_stop else self.take_profit_price)
+                exit_price = self.stop_price if hit_stop else self.take_profit_price
+                pnl, r_multiple = self._close_position(exit_price)
                 reward += r_multiple
-                info.update({"trade_closed": True, "pnl": pnl, "r_multiple": r_multiple})
+                info.update(
+                    {"trade_closed": True, "pnl": pnl, "r_multiple": r_multiple}
+                )
 
         if decision == "close" and self.position != 0:
             pnl, r_multiple = self._close_position(price)
@@ -99,7 +130,13 @@ class TradingEnv(gym.Env):
 
         target_side = 1 if decision == "enter_long" else -1 if decision == "enter_short" else 0
         if target_side != 0 and self.position != target_side:
-            reward += self._open_position(target_side, price, float(row["atr"]), sl_mult, tp_mult)
+            reward += self._open_position(
+                target_side,
+                price,
+                float(row["atr"]),
+                sl_mult,
+                tp_mult,
+            )
 
         self.current_step += 1
         terminated = self.current_step >= len(self.df) - 1

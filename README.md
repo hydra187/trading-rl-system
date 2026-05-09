@@ -51,6 +51,78 @@ This repository contains an end-to-end notebook that:
 - `stable-baselines3`
 - `matplotlib`
 
+## RL architecture
+
+The notebook uses a custom `gymnasium` environment and trains a PPO agent from
+`stable-baselines3`.
+
+Observation space:
+
+- recent return
+- volume change
+- RSI
+- MACD histogram
+- ATR
+- rolling volatility
+- discovered pattern id
+- current position state
+
+Action space:
+
+- `action[0]`: trade decision
+  - hold
+  - enter long
+  - enter short
+  - close
+- `action[1]`: ATR-based stop-loss distance
+- `action[2]`: ATR-based take-profit distance
+
+The environment includes stop-loss logic, take-profit logic, commission, and
+slippage. It is intentionally compact so the full workflow can run in a fresh
+Colab runtime.
+
+## Pattern discovery approach
+
+The pattern discovery section uses `MiniBatchKMeans` on standardized rolling
+windows of returns. Each window represents a short local price-shape regime.
+The resulting cluster id is added as a feature for the RL agent.
+
+This is a simple and explainable baseline. It is not meant to be the strongest
+possible sequence model, but it satisfies the assessment goal of adding an
+unsupervised market-pattern signal without making the notebook heavy or brittle.
+
+## Reward system
+
+Rewards are based on R-multiples:
+
+```text
+R-multiple = net trade return / initial risk
+```
+
+Initial risk is defined by the distance between entry price and the initial
+stop-loss. Net return includes commission and slippage. This makes the reward
+more risk-aware than raw profit because a profitable trade only scores well if
+it earns enough relative to the risk it accepted.
+
+The included acceptance tests verify three critical cases:
+
+- doing nothing produces approximately zero reward
+- opening and immediately closing loses friction cost
+- a 3R take-profit produces approximately `+3` reward when friction is disabled
+
+## Backtesting metrics
+
+The notebook reports:
+
+- total return
+- Sharpe ratio
+- max drawdown
+- number of trades
+- win rate
+- average R-multiple
+- equity curve
+- R-multiple distribution plot
+
 ## How to run in Colab
 
 1. Open `Trading_RL_System.ipynb` in Google Colab.
@@ -79,6 +151,13 @@ Final backtest metrics are printed inside the notebook after training. They are 
 
 Reported metrics include total return, Sharpe ratio, max drawdown, number of trades, win rate, and average R-multiple.
 
+## Results
+
+No fixed results are hardcoded in the repository. The final metrics table is
+created when the notebook runs, after data download, training, and backtesting.
+This avoids inventing or freezing results that may not reproduce exactly on a
+fresh runtime.
+
 ## Limitations
 
 - K-Means pattern discovery is a simple baseline and does not model sequence dynamics as well as an HMM, temporal CNN, or recurrent autoencoder.
@@ -86,6 +165,15 @@ Reported metrics include total return, Sharpe ratio, max drawdown, number of tra
 - Position sizing is simplified to one notional unit per trade.
 - PPO training is intentionally short so the notebook remains practical for Colab assessment review.
 - Results should be treated as a research prototype, not live-trading advice.
+
+## Future improvements
+
+- Add walk-forward validation across multiple market regimes.
+- Compare PPO against random, buy-and-hold, and rule-based baselines.
+- Tune environment and PPO hyperparameters with Optuna.
+- Replace K-Means with a sequence-aware pattern model.
+- Add position sizing, leverage limits, and exchange-specific execution rules.
+- Run backtests on lower-timeframe data to reduce intra-bar ambiguity.
 
 ## Submission note
 
