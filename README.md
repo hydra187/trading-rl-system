@@ -1,49 +1,60 @@
 # Trading RL System
 
-Internship assessment project for building a compact reinforcement learning trading system in Google Colab.
+Internship assessment repository for a compact reinforcement learning trading
+system that runs in Google Colab.
 
-## Overview
+The project is intentionally notebook-first. It downloads market data, builds
+features, discovers simple market patterns, trains a PPO agent, runs acceptance
+tests, and reports backtest metrics with plots.
 
-This repository contains an end-to-end notebook that:
+## Project Overview
 
-- Pulls BTC-USD hourly OHLCV data automatically with `yfinance`.
-- Builds clean technical features after indicator warm-up.
-- Adds unsupervised pattern discovery with K-Means over rolling return windows.
-- Implements a custom `gymnasium` trading environment.
-- Trains a PPO agent with `stable-baselines3`.
-- Evaluates the strategy with backtest metrics and inline plots.
-- Includes automated acceptance tests for the core reward and execution logic.
+`Trading_RL_System.ipynb` is the main submission artifact. It is designed to run
+top-to-bottom on a fresh Colab runtime.
+
+The notebook performs the full workflow:
+
+- installs dependencies
+- downloads BTC-USD OHLCV data with `yfinance`
+- engineers clean trading features
+- adds unsupervised pattern-discovery labels
+- defines a custom `gymnasium` RL trading environment
+- trains a PPO policy with `stable-baselines3`
+- saves the trained model
+- runs acceptance tests for reward and execution logic
+- reports backtest metrics and inline plots
+
+## Repository Contents
+
+| File | Purpose |
+| --- | --- |
+| `Trading_RL_System.ipynb` | Main Colab notebook for the assessment |
+| `generate_notebook.py` | Script used to regenerate the notebook structure |
+| `acceptance_tests.py` | Local synthetic-data tests for core environment behavior |
+| `README.md` | Project documentation and submission notes |
+
+`test_run.py` was removed because it was an unnecessary duplicate-style script
+and not part of the clean submission.
 
 ## Features
 
-- Automatic OHLCV data download, no API key required.
-- Feature checks to ensure no NaNs remain after warm-up.
-- Continuous action space with explicit support for:
-  - hold
-  - enter long
-  - enter short
-  - close
-  - ATR-based stop-loss distance
-  - ATR-based take-profit distance
-- Commission and slippage included as trading friction.
-- R-multiple reward logic based on net return divided by initial trade risk.
-- Acceptance tests for:
-  - do-nothing policy near-zero reward
-  - open then close losing friction cost
-  - 3R take-profit producing about +3 reward
-- Backtest metrics:
-  - total return
-  - Sharpe ratio
-  - max drawdown
-  - number of trades
-  - win rate
-  - average R-multiple
+- Automatic OHLCV data download.
+- No API key required.
+- Indicator warm-up cleanup with NaN checks.
+- Unsupervised pattern discovery using rolling return windows.
+- Custom RL environment with explicit trading actions.
+- Commission and slippage included as friction.
+- R-multiple reward logic.
+- PPO training and model saving.
+- Backtest metrics and inline plots.
+- Local acceptance tests that run without network access.
 
-## Tech stack
+## Tech Stack
 
 - Python
 - Google Colab
-- `pandas`, `numpy`
+- `pandas`
+- `numpy`
 - `yfinance`
 - `ta`
 - `scikit-learn`
@@ -51,12 +62,14 @@ This repository contains an end-to-end notebook that:
 - `stable-baselines3`
 - `matplotlib`
 
-## RL architecture
+## RL Architecture
 
 The notebook uses a custom `gymnasium` environment and trains a PPO agent from
 `stable-baselines3`.
 
-Observation space:
+### Observation Space
+
+The observation includes:
 
 - recent return
 - volume change
@@ -67,50 +80,71 @@ Observation space:
 - discovered pattern id
 - current position state
 
-Action space:
+### Action Space
+
+The continuous action has three components:
 
 - `action[0]`: trade decision
-  - hold
-  - enter long
-  - enter short
-  - close
-- `action[1]`: ATR-based stop-loss distance
-- `action[2]`: ATR-based take-profit distance
+- `action[1]`: stop-loss distance
+- `action[2]`: take-profit distance
 
-The environment includes stop-loss logic, take-profit logic, commission, and
-slippage. It is intentionally compact so the full workflow can run in a fresh
-Colab runtime.
+The trade decision supports:
 
-## Pattern discovery approach
+- hold
+- enter long
+- enter short
+- close
 
-The pattern discovery section uses `MiniBatchKMeans` on standardized rolling
-windows of returns. Each window represents a short local price-shape regime.
-The resulting cluster id is added as a feature for the RL agent.
+Stop-loss and take-profit distances are mapped from the action values to
+ATR-based distances.
 
-This is a simple and explainable baseline. It is not meant to be the strongest
-possible sequence model, but it satisfies the assessment goal of adding an
-unsupervised market-pattern signal without making the notebook heavy or brittle.
+## Pattern Discovery Approach
 
-## Reward system
+The pattern discovery step uses `MiniBatchKMeans` on standardized rolling
+windows of returns.
 
-Rewards are based on R-multiples:
+Each rolling window represents a short local price-shape regime. The fitted
+cluster id is added back to the dataset as a compact market-pattern feature for
+the RL policy.
+
+This approach is simple and explainable. It is not the strongest possible
+sequence model, but it keeps the assessment lightweight and reproducible in
+Colab.
+
+## Reward System
+
+The environment rewards closed trades using R-multiple logic:
 
 ```text
-R-multiple = net trade return / initial risk
+R-multiple = net trade return / initial trade risk
 ```
 
-Initial risk is defined by the distance between entry price and the initial
-stop-loss. Net return includes commission and slippage. This makes the reward
-more risk-aware than raw profit because a profitable trade only scores well if
-it earns enough relative to the risk it accepted.
+Initial trade risk is the distance between the entry price and initial
+stop-loss. Net trade return includes commission and slippage.
 
-The included acceptance tests verify three critical cases:
+This makes the reward more risk-aware than raw PnL because the agent is judged
+by profit relative to the risk it accepted.
 
-- doing nothing produces approximately zero reward
-- opening and immediately closing loses friction cost
-- a 3R take-profit produces approximately `+3` reward when friction is disabled
+## Environment Validation
 
-## Backtesting metrics
+The environment includes:
+
+- hold logic
+- enter-long logic
+- enter-short logic
+- manual close logic
+- stop-loss logic
+- take-profit logic
+- commission
+- slippage
+
+The local test file validates three important cases:
+
+- do-nothing policy produces approximately zero reward
+- instant open-close loses friction cost
+- take-profit hit gives approximately the correct R-multiple reward
+
+## Backtesting Metrics
 
 The notebook reports:
 
@@ -120,20 +154,26 @@ The notebook reports:
 - number of trades
 - win rate
 - average R-multiple
+
+The notebook also displays:
+
 - equity curve
 - R-multiple distribution plot
 
-## How to run in Colab
+## How To Run In Colab
 
 1. Open `Trading_RL_System.ipynb` in Google Colab.
 2. Select `Runtime > Restart and run all`.
-3. The first code cell installs all notebook dependencies.
-4. The notebook downloads BTC-USD data automatically.
-5. Review the final metrics table, equity curve, and R-multiple distribution at the end.
+3. Let the first code cell install dependencies.
+4. Confirm BTC-USD data downloads successfully.
+5. Confirm acceptance tests pass inside the notebook.
+6. Confirm the final metrics table and plots render at the end.
 
-## Local acceptance tests
+## Local Acceptance Tests
 
-The local tests use synthetic data, so they do not require network access:
+The local tests use synthetic data and do not require internet access.
+
+Run:
 
 ```bash
 python3 acceptance_tests.py
@@ -145,36 +185,38 @@ Expected output:
 All acceptance tests passed.
 ```
 
-## Metrics
-
-Final backtest metrics are printed inside the notebook after training. They are generated at runtime because the notebook pulls market data automatically and trains the PPO model in-session.
-
-Reported metrics include total return, Sharpe ratio, max drawdown, number of trades, win rate, and average R-multiple.
-
 ## Results
 
-No fixed results are hardcoded in the repository. The final metrics table is
-created when the notebook runs, after data download, training, and backtesting.
-This avoids inventing or freezing results that may not reproduce exactly on a
-fresh runtime.
+No fixed numeric results are hardcoded in this repository.
+
+The final metrics are generated when the notebook runs because the workflow
+downloads market data and trains the PPO model at runtime. This avoids
+inventing or freezing results that may not reproduce exactly on a fresh Colab
+runtime.
 
 ## Limitations
 
-- K-Means pattern discovery is a simple baseline and does not model sequence dynamics as well as an HMM, temporal CNN, or recurrent autoencoder.
-- Hourly OHLCV data cannot fully reconstruct intra-bar execution order.
+- K-Means is a simple pattern-discovery baseline and does not model sequence
+  dynamics as well as a temporal model.
+- Hourly OHLCV bars cannot fully reconstruct intra-bar execution order.
 - Position sizing is simplified to one notional unit per trade.
-- PPO training is intentionally short so the notebook remains practical for Colab assessment review.
-- Results should be treated as a research prototype, not live-trading advice.
+- PPO training is intentionally short so the notebook remains practical for
+  assessment review.
+- This is a research prototype, not live-trading advice.
 
-## Future improvements
+## Future Improvements
 
 - Add walk-forward validation across multiple market regimes.
 - Compare PPO against random, buy-and-hold, and rule-based baselines.
-- Tune environment and PPO hyperparameters with Optuna.
+- Tune PPO and environment parameters with Optuna.
 - Replace K-Means with a sequence-aware pattern model.
 - Add position sizing, leverage limits, and exchange-specific execution rules.
-- Run backtests on lower-timeframe data to reduce intra-bar ambiguity.
+- Test on lower-timeframe data to reduce intra-bar ambiguity.
 
-## Submission note
+## Submission Note
 
-This repository is prepared for the Trading RL System internship assessment. The notebook is designed to run top-to-bottom in Google Colab and includes the required markdown discussion sections, environment validation, acceptance tests, model saving, backtest metrics, and inline plots.
+This repository is prepared for the Trading RL System internship assessment.
+
+Before submitting, run the notebook once in a fresh Colab runtime and use the
+metrics produced by that run. Do not report numeric results that were not
+produced by the notebook.

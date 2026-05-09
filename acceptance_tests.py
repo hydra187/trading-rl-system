@@ -128,7 +128,12 @@ class TradingEnv(gym.Env):
             reward += r_multiple
             info.update({"trade_closed": True, "pnl": pnl, "r_multiple": r_multiple})
 
-        target_side = 1 if decision == "enter_long" else -1 if decision == "enter_short" else 0
+        if decision == "enter_long":
+            target_side = 1
+        elif decision == "enter_short":
+            target_side = -1
+        else:
+            target_side = 0
         if target_side != 0 and self.position != target_side:
             reward += self._open_position(
                 target_side,
