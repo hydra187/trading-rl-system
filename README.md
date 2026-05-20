@@ -1,146 +1,338 @@
-# Trading RL System
+# 🚀 Trading RL System
 
-Internship assessment project for a reinforcement learning trading system.
+> Reinforcement Learning based trading system using PPO, custom Gym environment, BTC-USD market data, feature engineering, backtesting, and risk-aware rewards.
 
-The main deliverable is `Trading_RL_System.ipynb`.
-It is designed to run top-to-bottom in Google Colab.
+![Python](https://img.shields.io/badge/Python-3.x-blue)
+![RL](https://img.shields.io/badge/Reinforcement-Learning-green)
+![PPO](https://img.shields.io/badge/PPO-Agent-orange)
+![StableBaselines3](https://img.shields.io/badge/StableBaselines3-RL-red)
+![Gymnasium](https://img.shields.io/badge/Gymnasium-Environment-purple)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
-## Overview
+---
 
-This project builds a compact RL trading workflow.
+# 📌 Project Overview
 
-It downloads market data automatically.
-It builds technical features.
-It discovers simple market patterns.
-It trains a PPO reinforcement learning agent.
-It evaluates the trained policy with backtest metrics and plots.
+Trading RL System is a reinforcement learning-based trading simulator that trains a PPO (Proximal Policy Optimization) agent on BTC-USD market data and evaluates trading performance using custom rewards, backtesting metrics, and technical indicators.
 
-No fixed numeric results are hardcoded.
-Final results should come from running the notebook.
+This project demonstrates how reinforcement learning can be applied to financial market simulations through:
 
-## Repository Files
+- Market feature engineering
+- Reinforcement learning environments
+- Risk-aware reward systems
+- Pattern discovery
+- Backtesting and evaluation
 
-| File | Purpose |
-| --- | --- |
-| `Trading_RL_System.ipynb` | Main Colab notebook |
-| `acceptance_tests.py` | Local acceptance tests |
-| `generate_notebook.py` | Notebook generation helper |
-| `README.md` | Project documentation |
+The project is built for learning and experimentation in AI, Reinforcement Learning, and quantitative trading.
 
-`test_run.py` was removed.
-It was not needed for the final submission.
+---
 
-## Features
+# ✨ Features
 
-- Automatic BTC-USD OHLCV data download.
-- Clean feature engineering after indicator warm-up.
-- NaN checks before training.
-- Unsupervised pattern discovery.
-- Custom trading environment.
-- PPO training with `stable-baselines3`.
-- Commission and slippage support.
-- R-multiple reward logic.
-- Model saving.
-- Backtest metrics.
-- Equity curve plot.
-- R-multiple distribution plot.
-- Local acceptance tests.
+✅ Historical BTC-USD data collection using `yfinance`  
+✅ Technical indicator based feature engineering  
+✅ Market pattern discovery using clustering  
+✅ Custom Gymnasium trading environment  
+✅ PPO reinforcement learning agent training  
+✅ Long / Short / Hold / Close actions  
+✅ ATR-based stop-loss and take-profit system  
+✅ Commission + slippage handling  
+✅ Risk-aware reward function (R-Multiple)  
+✅ Backtesting and performance evaluation  
+✅ Acceptance testing with synthetic data  
+✅ Metrics and performance visualization  
 
-## Tech Stack
+---
+
+# 🛠 Tech Stack
+
+### Languages & Libraries
 
 - Python
-- Google Colab
-- pandas
 - NumPy
-- yfinance
-- ta
+- pandas
+- matplotlib
 - scikit-learn
+- yfinance
 - gymnasium
 - stable-baselines3
-- matplotlib
 
-## RL Architecture
+### Environment
 
-The notebook defines a custom trading environment.
-The agent is trained with PPO.
+- Google Colab
+- Jupyter Notebook
 
-The observation includes:
+---
 
-- recent return
-- volume change
-- RSI
-- MACD histogram
-- ATR
-- rolling volatility
-- discovered pattern id
-- current position state
+# 🏗 Project Architecture
 
-The action has three parts:
-
-- trade decision
-- stop-loss distance
-- take-profit distance
-
-The trade decision supports:
-
-- hold
-- enter long
-- enter short
-- close
-
-Stop-loss and take-profit distances are based on ATR.
-
-## Pattern Discovery
-
-The notebook uses `MiniBatchKMeans`.
-
-The model clusters standardized rolling windows of returns.
-Each cluster becomes a market-pattern feature.
-
-This is a simple and explainable baseline.
-It keeps the notebook light enough for Colab.
-
-## Reward System
-
-Rewards are based on R-multiples.
-
-```text
-R-multiple = net trade return / initial trade risk
+```txt
+BTC-USD Market Data
+          ↓
+Feature Engineering
+(RSI, ATR, MACD, Volatility)
+          ↓
+Pattern Discovery
+(MiniBatchKMeans)
+          ↓
+Custom Trading Environment
+(Gymnasium)
+          ↓
+PPO Agent Training
+(Stable Baselines3)
+          ↓
+Trade Execution Simulation
+(Long / Short / Close)
+          ↓
+Backtesting
+          ↓
+Performance Metrics + Graphs
 ```
 
-Initial trade risk is the distance from entry price to stop-loss.
-Net trade return includes commission and slippage.
+---
 
-This rewards trades by profit relative to accepted risk.
+# 📂 Repository Structure
 
-## Backtest Outputs
+```txt
+trading-rl-system/
+│
+├── Trading_RL_System.ipynb
+│   └── Main notebook for RL training and evaluation
+│
+├── acceptance_tests.py
+│   └── Acceptance tests for environment logic
+│
+├── generate_notebook.py
+│   └── Helper script
+│
+├── assets/
+│   ├── equity_curve.png
+│   ├── metrics.png
+│   ├── training_output.png
+│   └── acceptance_tests.png
+│
+└── README.md
+```
 
-The notebook reports:
+---
 
-- total return
-- Sharpe ratio
-- max drawdown
-- number of trades
-- win rate
-- average R-multiple
+# ⚙️ How It Works
 
-The notebook also displays:
+The system follows an end-to-end RL trading pipeline.
 
-- equity curve
-- R-multiple distribution
+### Step 1: Collect Market Data
 
-## How To Run In Colab
+Historical BTC-USD OHLCV data is downloaded using:
 
-1. Open `Trading_RL_System.ipynb` in Google Colab.
-2. Choose `Runtime > Restart and run all`.
-3. Let the first cell install dependencies.
-4. Confirm BTC-USD data downloads.
-5. Confirm acceptance tests pass.
-6. Review the final metrics table and plots.
+```python
+yfinance
+```
 
-## Local Tests
+The dataset contains:
 
-Run:
+- Open
+- High
+- Low
+- Close
+- Volume
+
+---
+
+### Step 2: Feature Engineering
+
+The system generates market features including:
+
+- RSI (Relative Strength Index)
+- ATR (Average True Range)
+- MACD Histogram
+- Volume Change
+- Rolling Volatility
+- Market Returns
+
+These features are used as observations for the RL agent.
+
+---
+
+### Step 3: Market Pattern Discovery
+
+The project uses:
+
+```txt
+MiniBatchKMeans
+```
+
+to identify simple market regimes/patterns.
+
+Example:
+
+- trending market
+- sideways market
+- volatile movement
+
+The detected cluster ID becomes part of the observation space.
+
+---
+
+### Step 4: Custom Trading Environment
+
+A custom Gymnasium environment simulates trading.
+
+The environment supports:
+
+### Observation Space
+
+The model receives:
+
+- RSI
+- ATR
+- MACD Histogram
+- Volatility
+- Returns
+- Market pattern ID
+- Position state
+
+### Action Space
+
+The PPO agent can:
+
+| Action | Description |
+|--------|-------------|
+| 0 | Hold |
+| 1 | Enter Long |
+| 2 | Enter Short |
+| 3 | Close Position |
+
+---
+
+### Step 5: Risk Management
+
+Trades include:
+
+- ATR-based stop-loss
+- ATR-based take-profit
+- commission cost
+- slippage simulation
+
+This improves realism during backtesting.
+
+---
+
+### Step 6: Reward System
+
+Instead of rewarding raw profit, the project uses:
+
+## R-Multiple Based Reward
+
+```txt
+R = Net Trade Return / Initial Trade Risk
+```
+
+This encourages the agent to optimize:
+
+- better entries
+- controlled risk
+- better reward-to-risk ratio
+
+rather than chasing random profits.
+
+---
+
+### Step 7: PPO Training
+
+The system trains a:
+
+```txt
+PPO (Proximal Policy Optimization)
+```
+
+agent using:
+
+```txt
+stable-baselines3
+```
+
+The agent learns trading decisions through interaction with the environment.
+
+---
+
+### Step 8: Backtesting
+
+After training, the system evaluates performance using:
+
+- Total Return
+- Sharpe Ratio
+- Max Drawdown
+- Number of Trades
+- Win Rate
+- Average R-Multiple
+
+---
+
+# 📊 Sample Outputs
+
+Add screenshots inside:
+
+```txt
+assets/
+```
+
+Then insert them here.
+
+## Equity Curve
+
+```md
+![Equity Curve](assets/equity_curve.png)
+```
+
+## Training Output
+
+```md
+![Training Output](assets/training_output.png)
+```
+
+## Metrics
+
+```md
+![Metrics](assets/metrics.png)
+```
+
+## Acceptance Tests
+
+```md
+![Acceptance Tests](assets/acceptance_tests.png)
+```
+
+---
+
+# ▶️ How To Run
+
+## Run in Google Colab
+
+1. Open `Trading_RL_System.ipynb`
+2. Click:
+
+```txt
+Runtime → Run all
+```
+
+3. Wait for dependencies to install
+4. Review metrics and generated graphs
+
+---
+
+## Run Locally
+
+Install dependencies:
+
+```bash
+pip install pandas numpy matplotlib gymnasium scikit-learn yfinance stable-baselines3
+```
+
+Run notebook.
+
+---
+
+## Run Acceptance Tests
 
 ```bash
 python3 acceptance_tests.py
@@ -148,41 +340,89 @@ python3 acceptance_tests.py
 
 Expected output:
 
-```text
+```txt
 All acceptance tests passed.
 ```
 
-## Assessment Sections Included
+---
 
-The notebook includes:
+# 📈 Example Performance Metrics
 
-- How to run
-- Stack and choices
-- Final metrics table
-- What broke / what surprised me
-- Three weakest decisions
-- What I would do with one more week
+Example metrics generated during evaluation:
 
-## Limitations
+| Metric | Description |
+|--------|-------------|
+| Total Return | Final return percentage |
+| Sharpe Ratio | Risk-adjusted return |
+| Max Drawdown | Worst portfolio drop |
+| Win Rate | Successful trades |
+| Avg R-Multiple | Reward per risk |
 
-- K-Means is a simple pattern-discovery baseline.
-- Hourly OHLCV bars cannot fully show intra-bar execution order.
-- Position sizing is simplified.
-- PPO training is intentionally short for assessment runtime.
-- This is not live-trading advice.
+---
 
-## Future Improvements
+# 🚧 Current Limitations
 
-- Add walk-forward validation.
-- Compare PPO with baseline strategies.
-- Tune hyperparameters with Optuna.
-- Use a sequence-aware pattern model.
-- Add realistic position sizing.
-- Test lower-timeframe execution data.
+- Limited PPO training duration for faster execution
+- Simplified trading simulation
+- Uses historical OHLCV data only
+- No live market execution
+- Position sizing is simplified
 
-## Submission Note
+---
 
-Run the notebook once in a fresh Colab runtime before submission.
+# 🔮 Future Improvements
 
-Only report metrics produced by that run.
-Do not invent or hardcode results.
+- Streamlit trading dashboard
+- Live market paper trading
+- Hyperparameter tuning
+- Multi-asset trading
+- Walk-forward validation
+- Model comparison
+- WebSocket real-time price updates
+- Better portfolio management
+- Advanced risk management
+
+---
+
+# 🧪 Acceptance Testing
+
+The repository includes:
+
+```txt
+acceptance_tests.py
+```
+
+to verify:
+
+- environment logic
+- trade execution
+- reward calculation
+- position handling
+
+using synthetic market data.
+
+---
+
+# 🎯 Learning Outcomes
+
+This project helped explore:
+
+- Reinforcement Learning
+- PPO Algorithms
+- Custom RL environments
+- Feature engineering
+- Quantitative trading basics
+- Backtesting systems
+- Risk-aware reward engineering
+- Financial data analysis
+
+---
+
+# ⚠️ Disclaimer
+
+This project is for educational and research purposes only.
+
+It is **NOT financial advice** and should not be used for live trading without proper testing, validation, and risk management.
+
+---
+
